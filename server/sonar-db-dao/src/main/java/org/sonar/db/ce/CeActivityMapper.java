@@ -20,6 +20,7 @@
 package org.sonar.db.ce;
 
 import java.util.List;
+import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.ibatis.annotations.Param;
@@ -35,6 +36,8 @@ public interface CeActivityMapper {
   List<CeActivityDto> selectByQuery(@Param("query") CeTaskQuery query, @Param("pagination") Pagination pagination);
 
   List<CeActivityDto> selectOlderThan(@Param("beforeDate") long beforeDate);
+
+  Set<CeActivityDto> selectByAnalysisUuids(@Param("analysisUuids") List<String> analysisUuids);
 
   int countLastByStatusAndComponentUuid(@Param("status") CeActivityDto.Status status, @Nullable @Param("componentUuid") String componentUuid);
 

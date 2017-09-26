@@ -22,9 +22,12 @@ package org.sonar.db.ce;
 import com.google.common.base.Function;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
+import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,6 +40,7 @@ import org.sonar.db.Pagination;
 
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
+import static org.apache.commons.lang.RandomStringUtils.randomAlphanumeric;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonar.db.Pagination.forPage;
 import static org.sonar.db.ce.CeActivityDto.Status.FAILED;
@@ -299,6 +303,66 @@ public class CeActivityDaoTest {
   }
 
   @Test
+  public void selectByAnalysisUuids_retrieve_row_for_a_single_analysis_uuid() {
+    CeActivityDto.Status randomStatus = CeActivityDto.Status.values()[new Random().nextInt(CeActivityDto.Status.values().length)];
+    String analysisUuid = randomAlphanumeric(10);
+    String otherAnalysisUuid = randomAlphanumeric(12);
+    insert(randomAlphanumeric(3), randomAlphanumeric(4), randomAlphanumeric(5), randomStatus, noAnalysisUuid());
+    CeActivityDto row2 = insert(randomAlphanumeric(4), randomAlphanumeric(4), randomAlphanumeric(5), randomStatus, withAnalysisUuid(analysisUuid));
+    CeActivityDto row3 = insert(randomAlphanumeric(5), randomAlphanumeric(4), randomAlphanumeric(5), randomStatus, withAnalysisUuid(otherAnalysisUuid));
+
+    assertThat(underTest.selectByAnalysisUuids(dbSession, singleton(randomAlphanumeric(90)))).isEmpty();
+    assertThat(underTest.selectByAnalysisUuids(dbSession, singleton(analysisUuid)))
+      .extracting(CeActivityDto::getUuid)
+      .containsOnly(row2.getUuid());
+    assertThat(underTest.selectByAnalysisUuids(dbSession, singleton(otherAnalysisUuid)))
+      .extracting(CeActivityDto::getUuid)
+      .containsOnly(row3.getUuid());
+  }
+
+  @Test
+  public void selectByAnalysisUuids_retrieve_rows_for_a_single_analysis_uuid() {
+    CeActivityDto.Status randomStatus = CeActivityDto.Status.values()[new Random().nextInt(CeActivityDto.Status.values().length)];
+    String analysisUuid = randomAlphanumeric(10);
+    insert(randomAlphanumeric(3), randomAlphanumeric(4), randomAlphanumeric(5), randomStatus, noAnalysisUuid());
+    CeActivityDto row2 = insert(randomAlphanumeric(4), randomAlphanumeric(4), randomAlphanumeric(5), randomStatus, withAnalysisUuid(analysisUuid));
+    CeActivityDto row3 = insert(randomAlphanumeric(5), randomAlphanumeric(4), randomAlphanumeric(5), randomStatus, withAnalysisUuid(analysisUuid));
+
+    assertThat(underTest.selectByAnalysisUuids(dbSession, singleton(randomAlphanumeric(90)))).isEmpty();
+    assertThat(underTest.selectByAnalysisUuids(dbSession, singleton(analysisUuid)))
+      .extracting(CeActivityDto::getUuid)
+      .containsOnly(row2.getUuid(), row3.getUuid());
+  }
+
+  @Test
+  public void selectByAnalysisUuids_retrieve_rows_for_a_multiple_analysis_uuid() {
+    CeActivityDto.Status randomStatus = CeActivityDto.Status.values()[new Random().nextInt(CeActivityDto.Status.values().length)];
+    String analysisUuid = randomAlphanumeric(10);
+    String otherAnalysisUuid = randomAlphanumeric(12);
+    insert(randomAlphanumeric(3), randomAlphanumeric(4), randomAlphanumeric(5), randomStatus, noAnalysisUuid());
+    CeActivityDto row2 = insert(randomAlphanumeric(4), randomAlphanumeric(4), randomAlphanumeric(5), randomStatus, withAnalysisUuid(analysisUuid));
+    CeActivityDto row3 = insert(randomAlphanumeric(5), randomAlphanumeric(4), randomAlphanumeric(5), randomStatus, withAnalysisUuid(otherAnalysisUuid));
+    CeActivityDto row4 = insert(randomAlphanumeric(6), randomAlphanumeric(4), randomAlphanumeric(5), randomStatus, withAnalysisUuid(analysisUuid));
+    CeActivityDto row5 = insert(randomAlphanumeric(7), randomAlphanumeric(4), randomAlphanumeric(5), randomStatus, withAnalysisUuid(otherAnalysisUuid));
+
+    assertThat(underTest.selectByAnalysisUuids(dbSession, singleton(randomAlphanumeric(90)))).isEmpty();
+    assertThat(underTest.selectByAnalysisUuids(dbSession, singleton(analysisUuid)))
+      .extracting(CeActivityDto::getUuid)
+      .containsOnly(row2.getUuid(), row4.getUuid());
+    assertThat(underTest.selectByAnalysisUuids(dbSession, singleton(otherAnalysisUuid)))
+      .extracting(CeActivityDto::getUuid)
+      .containsOnly(row3.getUuid(), row5.getUuid());
+  }
+
+  private static Consumer<CeActivityDto> withAnalysisUuid(String analysisUuid) {
+    return ceActivityDto -> ceActivityDto.setAnalysisUuid(analysisUuid);
+  }
+
+  private static Consumer<CeActivityDto> noAnalysisUuid() {
+    return ceActivityDto -> ceActivityDto.setAnalysisUuid(null);
+  }
+
+  @Test
   public void deleteByUuids() {
     insert("TASK_1", "REPORT", "COMPONENT1", CeActivityDto.Status.SUCCESS);
     insert("TASK_2", "REPORT", "COMPONENT1", CeActivityDto.Status.SUCCESS);
@@ -336,13 +400,15 @@ public class CeActivityDaoTest {
     assertThat(underTest.countLastByStatusAndComponentUuid(dbSession, SUCCESS, null)).isEqualTo(2);
   }
 
-  private CeActivityDto insert(String uuid, String type, String componentUuid, CeActivityDto.Status status) {
-    CeActivityDto dto = createActivityDto(uuid, type, componentUuid, status);
+  private CeActivityDto insert(String uuid, String type, String componentUuid, CeActivityDto.Status status,
+    Consumer<CeActivityDto>... configurers) {
+    CeActivityDto dto = createActivityDto(uuid, type, componentUuid, status, configurers);
     underTest.insert(db.getSession(), dto);
     return dto;
   }
 
-  private CeActivityDto createActivityDto(String uuid, String type, String componentUuid, CeActivityDto.Status status) {
+  private CeActivityDto createActivityDto(String uuid, String type, String componentUuid, CeActivityDto.Status status,
+    Consumer<CeActivityDto>... configurers) {
     CeQueueDto queueDto = new CeQueueDto();
     queueDto.setUuid(uuid);
     queueDto.setTaskType(type);
@@ -361,6 +427,7 @@ public class CeActivityDaoTest {
     if (status == FAILED) {
       dto.setErrorMessage("error msg for " + uuid);
     }
+    Arrays.stream(configurers).forEach(t -> t.accept(dto));
     return dto;
   }
 
@@ -384,8 +451,8 @@ public class CeActivityDaoTest {
 
   private List<String> selectPageOfUuids(Pagination pagination) {
     return underTest.selectByQuery(db.getSession(), new CeTaskQuery(), pagination).stream()
-        .map(CeActivityToUuid.INSTANCE::apply)
-        .collect(MoreCollectors.toList());
+      .map(CeActivityToUuid.INSTANCE::apply)
+      .collect(MoreCollectors.toList());
   }
 
   private enum CeActivityToUuid implements Function<CeActivityDto, String> {

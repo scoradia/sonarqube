@@ -19,6 +19,7 @@
  */
 package org.sonar.db.ce;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -26,6 +27,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import org.sonar.api.utils.System2;
 import org.sonar.db.Dao;
+import org.sonar.db.DatabaseUtils;
 import org.sonar.db.DbSession;
 import org.sonar.db.Pagination;
 
@@ -43,24 +45,8 @@ public class CeActivityDao implements Dao {
     return Optional.ofNullable(mapper(dbSession).selectByUuid(uuid));
   }
 
-  public void insert(DbSession dbSession, CeActivityDto dto) {
-    dto.setCreatedAt(system2.now());
-    dto.setUpdatedAt(system2.now());
-    dto.setIsLast(dto.getStatus() != CeActivityDto.Status.CANCELED);
-
-    CeActivityMapper ceActivityMapper = mapper(dbSession);
-    if (dto.getIsLast()) {
-      ceActivityMapper.updateIsLastToFalseForLastKey(dto.getIsLastKey(), dto.getUpdatedAt());
-    }
-    ceActivityMapper.insert(dto);
-  }
-
   public List<CeActivityDto> selectOlderThan(DbSession dbSession, long beforeDate) {
     return mapper(dbSession).selectOlderThan(beforeDate);
-  }
-
-  public void deleteByUuids(DbSession dbSession, Set<String> uuids) {
-    executeLargeUpdates(uuids, mapper(dbSession)::deleteByUuids);
   }
 
   /**
@@ -74,8 +60,31 @@ public class CeActivityDao implements Dao {
     return mapper(dbSession).selectByQuery(query, pagination);
   }
 
+  public Set<CeActivityDto> selectByAnalysisUuids(DbSession dbSession, Collection<String> analysisUuids) {
+    return DatabaseUtils.executeLargeInputsIntoSet(
+      analysisUuids,
+      mapper(dbSession)::selectByAnalysisUuids,
+      i -> i);
+  }
+
   public int countLastByStatusAndComponentUuid(DbSession dbSession, CeActivityDto.Status status, @Nullable String componentUuid) {
     return mapper(dbSession).countLastByStatusAndComponentUuid(status, componentUuid);
+  }
+
+  public void insert(DbSession dbSession, CeActivityDto dto) {
+    dto.setCreatedAt(system2.now());
+    dto.setUpdatedAt(system2.now());
+    dto.setIsLast(dto.getStatus() != CeActivityDto.Status.CANCELED);
+
+    CeActivityMapper ceActivityMapper = mapper(dbSession);
+    if (dto.getIsLast()) {
+      ceActivityMapper.updateIsLastToFalseForLastKey(dto.getIsLastKey(), dto.getUpdatedAt());
+    }
+    ceActivityMapper.insert(dto);
+  }
+
+  public void deleteByUuids(DbSession dbSession, Set<String> uuids) {
+    executeLargeUpdates(uuids, mapper(dbSession)::deleteByUuids);
   }
 
   private static CeActivityMapper mapper(DbSession dbSession) {
