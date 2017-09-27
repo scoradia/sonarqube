@@ -44,14 +44,12 @@ public class WebHooksImplTest {
 
   @Rule
   public LogTester logTester = new LogTester();
-  @Rule
-  public DbTester dbTester = DbTester.create(System2.INSTANCE);
 
   private final MapSettings settings = new MapSettings();
   private final TestWebhookCaller caller = new TestWebhookCaller();
   private final WebhookDeliveryStorage deliveryStorage = mock(WebhookDeliveryStorage.class);
   private final WebhookPayload mock = mock(WebhookPayload.class);
-  private final WebHooksImpl underTest = new WebHooksImpl(caller, deliveryStorage, dbTester.getDbClient());
+  private final WebHooksImpl underTest = new WebHooksImpl(caller, deliveryStorage);
 
   @Test
   public void do_nothing_if_no_webhooks() {

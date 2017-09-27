@@ -20,9 +20,7 @@
 package org.sonar.server.computation.task.projectanalysis.webhook;
 
 import com.google.common.collect.ImmutableMap;
-import java.util.Date;
 import java.util.Map;
-import java.util.Optional;
 import javax.annotation.Nullable;
 import org.junit.Before;
 import org.junit.Test;
@@ -321,48 +319,20 @@ public class WebhookPayloadFactoryImplTest {
 
   private static PostProjectAnalysisTask.ProjectAnalysis newAnalysis(CeTask task, @Nullable QualityGate gate,
     @Nullable Branch branch, @Nullable Long analysisDate, Map<String, String> scannerProperties) {
-    return new PostProjectAnalysisTask.ProjectAnalysis() {
-      @Override
-      public CeTask getCeTask() {
-        return task;
-      }
+    Project project = newProjectBuilder()
+      .setUuid("P1_UUID")
+      .setKey(PROJECT_KEY)
+      .setName("Project One")
+      .build();
+    ScannerContext scannerContext = newScannerContextBuilder()
+      .addProperties(scannerProperties)
+      .build();
+    Analysis analysis = null;
+    if (analysisDate != null) {
+      analysis = new Analysis("", analysisDate);
+    }
 
-      @Override
-      public Project getProject() {
-        return newProjectBuilder()
-          .setUuid("P1_UUID")
-          .setKey(PROJECT_KEY)
-          .setName("Project One")
-          .build();
-      }
-
-      @Override
-      public Optional<Branch> getBranch() {
-        return Optional.ofNullable(branch);
-      }
-
-      @Override
-      public QualityGate getQualityGate() {
-        return gate;
-      }
-
-      @Override
-      public Date getDate() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public Optional<Date> getAnalysisDate() {
-        return Optional.ofNullable(analysisDate).map(Date::new);
-      }
-
-      @Override
-      public ScannerContext getScannerContext() {
-        return newScannerContextBuilder()
-          .addProperties(scannerProperties)
-          .build();
-      }
-    };
+    return new ProjectAnalysis(project, branch, task, gate, analysis, scannerContext);
   }
 
 }

@@ -182,54 +182,11 @@ public class PostProjectAnalysisTaskTester {
     requireNonNull(project, PROJECT_CAN_NOT_BE_NULL);
     requireNonNull(date, DATE_CAN_NOT_BE_NULL);
 
-    PostProjectAnalysisTask.ProjectAnalysis projectAnalysis = new PostProjectAnalysisTask.ProjectAnalysis() {
-      @Override
-      public ScannerContext getScannerContext() {
-        return scannerContext;
-      }
+    Analysis analysis = new ProjectAnalysis.Analysis("", date); // FIXME ANALYSIS_UUID
+    PostProjectAnalysisTask.ProjectAnalysis projectAnalysis = new ProjectAnalysis(ceTask, project, branch, qualityGate, analysis, scannerContext, date);
 
-      @Override
-      public CeTask getCeTask() {
-        return ceTask;
-      }
-
-      @Override
-      public Project getProject() {
-        return project;
-      }
-
-      @Override
-      public Optional<Branch> getBranch() {
-        return Optional.ofNullable(branch);
-      }
-
-      @Override
-      public QualityGate getQualityGate() {
-        return qualityGate;
-      }
-
-      @Override
-      public Date getDate() {
-        return date;
-      }
-
-      @Override
-      public Optional<Date> getAnalysisDate() {
-        return Optional.of(date);
-      }
-
-      @Override
-      public String toString() {
-        return "ProjectAnalysis{" +
-            "ceTask=" + ceTask +
-            ", project=" + project +
-            ", date=" + date.getTime() +
-            ", analysisDate=" + date.getTime() +
-            ", qualityGate=" + qualityGate +
-            '}';
-      }
-    };
-    this.underTest.finished(projectAnalysis);
+    this.underTest.
+      finished(projectAnalysis);
 
     return projectAnalysis;
   }
