@@ -68,7 +68,7 @@ public class WebhookPostTask implements PostProjectAnalysisTask {
             .map(c -> new QualityGate.Condition(QualityGate.EvaluationStatus.valueOf(c.getStatus().name()), c.getMetricKey(), QualityGate.Operator.valueOf(c.getOperator().name()),
               c.getErrorThreshold(), c.getWarningThreshold(), c.isOnLeakPeriod(),
               c.getStatus() == org.sonar.api.ce.posttask.QualityGate.EvaluationStatus.NO_VALUE ? null : c.getValue()))
-            .collect(Collectors.toList())))
+            .collect(Collectors.toSet())))
         .orElse(null),
       analysis.getAnalysisDate().map(Date::getTime).orElse(null),
       analysis.getScannerContext().getProperties());

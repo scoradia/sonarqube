@@ -17,18 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.server.issue.ws;
+package org.sonar.server.issue.webhook;
 
-import org.junit.Test;
-import org.sonar.core.platform.ComponentContainer;
+import org.sonar.api.rules.RuleType;
+import org.sonar.core.issue.IssueChangeContext;
+import org.sonar.server.issue.ws.SearchResponseData;
 
-import static org.assertj.core.api.Assertions.assertThat;
+public interface IssueChangeWebhook {
+  void onTypeChange(SearchResponseData searchResponseData, RuleType ruleType, IssueChangeContext context);
 
-public class IssueWsModuleTest {
-  @Test
-  public void verify_count_of_added_components() {
-    ComponentContainer container = new ComponentContainer();
-    new IssueWsModule().configure(container);
-    assertThat(container.size()).isEqualTo(ComponentContainer.COMPONENTS_IN_EMPTY_COMPONENT_CONTAINER + 30);
-  }
+  void onTransition(SearchResponseData searchResponseData, String transitionKey, IssueChangeContext context);
 }
