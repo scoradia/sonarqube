@@ -24,6 +24,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.sonar.api.measures.MetricFinder;
+import org.sonar.api.server.ws.Change;
+import org.sonar.api.server.ws.WebService;
 import org.sonar.api.utils.System2;
 import org.sonar.api.web.UserRole;
 import org.sonar.db.DbClient;
@@ -43,6 +45,7 @@ import org.sonar.server.ws.WsActionTester;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.mock;
 import static org.sonar.db.permission.OrganizationPermission.ADMINISTER_QUALITY_PROFILES;
 import static org.sonar.server.qualitygate.QualityGates.SONAR_QUALITYGATE_PROPERTY;
@@ -72,6 +75,38 @@ public class DeselectActionTest {
 
     project = db.components().insertPrivateProject();
     gate = insertQualityGate();
+  }
+
+  @Test
+  public void definition() {
+    WebService.Action def = ws.getDef();
+
+    assertThat(def.description()).isNotEmpty();
+    assertThat(def.isPost()).isTrue();
+    assertThat(def.since()).isEqualTo("4.3");
+    assertThat(def.changelog()).extracting(Change::getVersion, Change::getDescription).containsExactly(
+      tuple("6.6", "The parameter 'gateId' was removed")
+    );
+//          .setDescription("Remove the association of a project from a quality gate. Require Administer Quality Gates permission")
+//      .setPost(true)
+//      .setSince("4.3")
+//      .setHandler(this)
+//      .setChangelog(new Change("6.6", "removed obsolete 'gateId' parameter"));
+
+    assertThat(def.params()).extracting(WebService.Param::key)
+      .containsExactlyInAnyOrder("projectId", "projectKey");
+
+    WebService.Param projectId = def.param("projectId");
+    assertThat(projectId.isRequired()).isFalse();
+    assertThat(projectId.deprecatedSince()).isEqualTo("6.1");
+    assertThat(projectId.description()).isNotEmpty();
+    assertThat(projectId.exampleValue()).isNotEmpty();
+
+    WebService.Param projectKey = def.param("projectKey");
+    assertThat(projectKey.isRequired()).isFalse();
+    assertThat(projectKey.since()).isEqualTo("6.1");
+    assertThat(projectKey.description()).isNotEmpty();
+    assertThat(projectKey.exampleValue()).isNotEmpty();
   }
 
   @Test
@@ -123,13 +158,6 @@ public class DeselectActionTest {
     callByKey(gateId, project.getDbKey());
 
     assertDeselected(project.getId());
-  }
-
-  @Test
-  public void fail_when_no_quality_gate() throws Exception {
-    expectedException.expect(NotFoundException.class);
-
-    callByKey("-1", project.getDbKey());
   }
 
   @Test
