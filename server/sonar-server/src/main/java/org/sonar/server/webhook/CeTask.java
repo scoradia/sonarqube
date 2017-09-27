@@ -19,27 +19,52 @@
  */
 package org.sonar.server.webhook;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.sonar.core.platform.ComponentContainer;
+import java.util.Objects;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.sonar.core.platform.ComponentContainer.COMPONENTS_IN_EMPTY_COMPONENT_CONTAINER;
+public final class CeTask {
+  private final String id;
+  private final Status status;
 
-public class WebhookModuleTest {
+  public CeTask(String id, Status status) {
+    this.id = id;
+    this.status = status;
+  }
 
-  @Rule
-  public ExpectedException expectedException = ExpectedException.none();
+  public String getId() {
+    return id;
+  }
 
-  private WebhookModule underTest = new WebhookModule();
+  public Status getStatus() {
+    return status;
+  }
 
-  @Test
-  public void verify_count_of_added_components() {
-    ComponentContainer container = new ComponentContainer();
+  public enum Status {
+    SUCCESS, FAILED
+  }
 
-    underTest.configure(container);
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    CeTask task = (CeTask) o;
+    return Objects.equals(id, task.id) &&
+      status == task.status;
+  }
 
-    assertThat(container.size()).isEqualTo(4 + COMPONENTS_IN_EMPTY_COMPONENT_CONTAINER);
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, status);
+  }
+
+  @Override
+  public String toString() {
+    return "CeTask{" +
+      "id='" + id + '\'' +
+      ", status=" + status +
+      '}';
   }
 }
