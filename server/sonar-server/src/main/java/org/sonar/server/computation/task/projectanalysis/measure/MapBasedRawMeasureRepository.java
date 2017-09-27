@@ -112,9 +112,8 @@ public final class MapBasedRawMeasureRepository<T> implements MeasureRepository 
   private static void checkValueTypeConsistency(Metric metric, Measure measure) {
     checkArgument(
       measure.getValueType() == Measure.ValueType.NO_VALUE || measure.getValueType() == metric.getType().getValueType(),
-      format(
-        "Measure's ValueType (%s) is not consistent with the Metric's ValueType (%s)",
-        measure.getValueType(), metric.getType().getValueType()));
+      "Measure's ValueType (%s) is not consistent with the Metric's ValueType (%s)",
+      measure.getValueType(), metric.getType().getValueType());
   }
 
   @Override
