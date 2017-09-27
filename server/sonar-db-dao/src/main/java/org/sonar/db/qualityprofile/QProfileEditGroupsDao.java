@@ -69,6 +69,10 @@ public class QProfileEditGroupsDao implements Dao {
     executeLargeUpdates(qProfiles.stream().map(QProfileDto::getKee).collect(toList()), p -> mapper(dbSession).deleteByQProfileUuids(p));
   }
 
+  public void deleteByGroup(DbSession dbSession, GroupDto group) {
+    mapper(dbSession).deleteByGroupId(group.getId());
+  }
+
   private static QProfileEditGroupsMapper mapper(DbSession dbSession) {
     return dbSession.getMapper(QProfileEditGroupsMapper.class);
   }

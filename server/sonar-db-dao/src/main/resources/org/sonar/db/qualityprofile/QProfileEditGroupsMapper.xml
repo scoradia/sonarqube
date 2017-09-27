@@ -107,5 +107,10 @@
     where qprofile_uuid in <foreach collection="qProfileUuids" open="(" close=")" item="qProfileUuid" separator=",">#{qProfileUuid, jdbcType=VARCHAR}</foreach>
   </delete>
 
+  <delete id="deleteByGroupId" parameterType="map">
+    delete from qprofile_edit_groups
+    where group_id = #{groupId, jdbcType=INTEGER}
+  </delete>
+
 </mapper>
 

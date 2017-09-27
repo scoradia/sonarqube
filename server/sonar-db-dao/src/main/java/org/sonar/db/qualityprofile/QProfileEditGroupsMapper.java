@@ -40,4 +40,6 @@ public interface QProfileEditGroupsMapper {
 
   void deleteByQProfileUuids(@Param("qProfileUuids") Collection<String> qProfileUuids);
 
+  void deleteByGroupId(@Param("groupId") int groupId);
+
 }
