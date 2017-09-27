@@ -25,8 +25,10 @@ import java.util.stream.IntStream;
 import org.junit.Rule;
 import org.junit.Test;
 import org.sonar.api.config.internal.MapSettings;
+import org.sonar.api.utils.System2;
 import org.sonar.api.utils.log.LogTester;
 import org.sonar.api.utils.log.LoggerLevel;
+import org.sonar.db.DbTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
@@ -42,16 +44,18 @@ public class WebHooksImplTest {
 
   @Rule
   public LogTester logTester = new LogTester();
+  @Rule
+  public DbTester dbTester = DbTester.create(System2.INSTANCE);
 
   private final MapSettings settings = new MapSettings();
   private final TestWebhookCaller caller = new TestWebhookCaller();
   private final WebhookDeliveryStorage deliveryStorage = mock(WebhookDeliveryStorage.class);
   private final WebhookPayload mock = mock(WebhookPayload.class);
-  private final WebHooksImpl underTest = new WebHooksImpl(caller, deliveryStorage);
+  private final WebHooksImpl underTest = new WebHooksImpl(caller, deliveryStorage, dbTester.getDbClient());
 
   @Test
   public void do_nothing_if_no_webhooks() {
-    underTest.sendProjectAnalysisUpdate(settings.asConfig(), new WebHooks.Analysis(PROJECT_UUID, "#1"), () -> mock);
+    underTest.sendProjectAnalysisUpdate(settings.asConfig(), new WebHooks.Analysis(PROJECT_UUID, "1", "#1"), () -> mock);
 
     assertThat(caller.countSent()).isEqualTo(0);
     assertThat(logTester.logs(LoggerLevel.DEBUG)).isEmpty();
@@ -68,7 +72,7 @@ public class WebHooksImplTest {
     caller.enqueueSuccess(NOW, 200, 1_234);
     caller.enqueueFailure(NOW, new IOException("Fail to connect"));
 
-    underTest.sendProjectAnalysisUpdate(settings.asConfig(), new WebHooks.Analysis(PROJECT_UUID, "#1"), () -> mock);
+    underTest.sendProjectAnalysisUpdate(settings.asConfig(), new WebHooks.Analysis(PROJECT_UUID, "1", "#1"), () -> mock);
 
     assertThat(caller.countSent()).isEqualTo(2);
     assertThat(logTester.logs(LoggerLevel.DEBUG)).contains("Sent webhook 'First' | url=http://url1 | time=1234ms | status=200");
@@ -84,7 +88,7 @@ public class WebHooksImplTest {
     settings.setProperty("sonar.webhooks.project.1.url", "http://url1");
     caller.enqueueSuccess(NOW, 200, 1_234);
 
-    underTest.sendProjectAnalysisUpdate(settings.asConfig(), new WebHooks.Analysis(PROJECT_UUID, "#1"), () -> mock);
+    underTest.sendProjectAnalysisUpdate(settings.asConfig(), new WebHooks.Analysis(PROJECT_UUID, "1", "#1"), () -> mock);
 
     assertThat(caller.countSent()).isEqualTo(1);
     assertThat(logTester.logs(LoggerLevel.DEBUG)).contains("Sent webhook 'First' | url=http://url1 | time=1234ms | status=200");
@@ -111,7 +115,7 @@ public class WebHooksImplTest {
       });
     settings.setProperty(property, IntStream.range(1, 15).mapToObj(String::valueOf).collect(Collectors.joining(",")));
 
-    underTest.sendProjectAnalysisUpdate(settings.asConfig(), new WebHooks.Analysis(PROJECT_UUID, "#1"), () -> mock);
+    underTest.sendProjectAnalysisUpdate(settings.asConfig(), new WebHooks.Analysis(PROJECT_UUID, "1", "#1"), () -> mock);
 
     assertThat(caller.countSent()).isEqualTo(10);
     assertThat(logTester.logs(LoggerLevel.DEBUG).stream().filter(log -> log.contains("Sent"))).hasSize(10);

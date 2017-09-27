@@ -18,25 +18,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-package org.sonar.server.platform.db.migration.version.v66;
+package org.sonar.api.ce.posttask;
 
-import org.junit.Test;
-
-import static org.sonar.server.platform.db.migration.version.DbVersionTestUtils.verifyMigrationCount;
-import static org.sonar.server.platform.db.migration.version.DbVersionTestUtils.verifyMinimumMigrationNumber;
-
-public class DbVersion66Test {
-
-  private DbVersion66 underTest = new DbVersion66();
-
-  @Test
-  public void migrationNumber_starts_at_1800() {
-    verifyMinimumMigrationNumber(underTest, 1800);
-  }
-
-  @Test
-  public void verify_migration_count() {
-    verifyMigrationCount(underTest, 14);
-  }
-
+public interface Analysis {
 }

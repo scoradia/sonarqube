@@ -20,6 +20,7 @@
 package org.sonar.server.computation.task.projectanalysis.webhook;
 
 import java.util.Date;
+import java.util.Optional;
 import java.util.Random;
 import java.util.function.Supplier;
 import org.junit.Before;
@@ -30,6 +31,9 @@ import org.sonar.api.ce.posttask.PostProjectAnalysisTask;
 import org.sonar.api.ce.posttask.PostProjectAnalysisTaskTester;
 import org.sonar.api.ce.posttask.Project;
 import org.sonar.api.config.Configuration;
+import org.sonar.db.DbClient;
+import org.sonar.db.ce.CeActivityDao;
+import org.sonar.db.ce.CeActivityDto;
 import org.sonar.server.computation.task.projectanalysis.component.ConfigurationRepository;
 import org.sonar.server.webhook.WebHooks;
 import org.sonar.server.webhook.WebhookPayload;
@@ -53,12 +57,18 @@ public class WebhookPostTaskTest {
   private final WebhookPayloadFactory payloadFactory = mock(WebhookPayloadFactory.class);
   private final WebHooks webHooks = mock(WebHooks.class);
   private final ConfigurationRepository configurationRepository = mock(ConfigurationRepository.class);
-  private WebhookPostTask underTest = new WebhookPostTask(configurationRepository, payloadFactory, webHooks);
+  private final DbClient dbClient = mock(DbClient.class);
+  private final CeActivityDao ceActivityDao = mock(CeActivityDao.class);
+  private final CeActivityDto ceActivityDto = mock(CeActivityDto.class);
+  private WebhookPostTask underTest = new WebhookPostTask(configurationRepository, payloadFactory, webHooks, dbClient);
 
   @Before
   public void wireMocks() throws Exception {
     when(payloadFactory.create(any(PostProjectAnalysisTask.ProjectAnalysis.class))).thenReturn(webhookPayload);
     when(configurationRepository.getConfiguration()).thenReturn(configuration);
+    when(dbClient.ceActivityDao()).thenReturn(ceActivityDao);
+    when(ceActivityDao.selectByUuid(any(), any())).thenReturn(Optional.of(ceActivityDto));
+    when(ceActivityDto.getAnalysisUuid()).thenReturn("uuid1");
   }
 
   @Test
@@ -81,7 +91,13 @@ public class WebhookPostTaskTest {
       .execute();
 
     ArgumentCaptor<Supplier> supplierCaptor = ArgumentCaptor.forClass(Supplier.class);
-    verify(webHooks).sendProjectAnalysisUpdate(same(configuration), eq(new WebHooks.Analysis(project.getUuid(), ceTask.getId())), supplierCaptor.capture());
+    verify(webHooks)
+      .sendProjectAnalysisUpdate(
+        same(configuration),
+        eq(new WebHooks.Analysis(project.getUuid(),
+          "uuid1",
+          ceTask.getId())),
+        supplierCaptor.capture());
 
     assertThat(supplierCaptor.getValue().get()).isSameAs(webhookPayload);
 

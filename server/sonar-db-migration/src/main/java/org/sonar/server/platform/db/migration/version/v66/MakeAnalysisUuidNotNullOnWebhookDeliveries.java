@@ -20,23 +20,26 @@
 
 package org.sonar.server.platform.db.migration.version.v66;
 
-import org.junit.Test;
+import java.sql.SQLException;
+import org.sonar.db.Database;
+import org.sonar.server.platform.db.migration.def.VarcharColumnDef;
+import org.sonar.server.platform.db.migration.sql.AlterColumnsBuilder;
+import org.sonar.server.platform.db.migration.step.DdlChange;
 
-import static org.sonar.server.platform.db.migration.version.DbVersionTestUtils.verifyMigrationCount;
-import static org.sonar.server.platform.db.migration.version.DbVersionTestUtils.verifyMinimumMigrationNumber;
+public class MakeAnalysisUuidNotNullOnWebhookDeliveries extends DdlChange {
 
-public class DbVersion66Test {
-
-  private DbVersion66 underTest = new DbVersion66();
-
-  @Test
-  public void migrationNumber_starts_at_1800() {
-    verifyMinimumMigrationNumber(underTest, 1800);
+  public MakeAnalysisUuidNotNullOnWebhookDeliveries(Database db) {
+    super(db);
   }
 
-  @Test
-  public void verify_migration_count() {
-    verifyMigrationCount(underTest, 14);
+  @Override
+  public void execute(Context context) throws SQLException {
+    context.execute(new AlterColumnsBuilder(getDialect(), "webhook_deliveries")
+      .updateColumn(VarcharColumnDef.newVarcharColumnDefBuilder()
+        .setColumnName("analysis_uuid")
+        .setLimit(40)
+        .setIsNullable(false)
+        .build())
+      .build());
   }
-
 }

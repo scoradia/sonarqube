@@ -28,8 +28,10 @@ public class WebhookDeliveryLiteDto<T extends WebhookDeliveryLiteDto> {
   protected String uuid;
   /** Component UUID, can't be null */
   protected String componentUuid;
-  /** Compute Engine task UUID, can't be null */
+  /** Compute Engine task UUID, can be null */
   protected String ceTaskUuid;
+  /** Compute Engine analysis UUID, can't be null */
+  protected String analysisUuid;
   /** Name, can't be null */
   protected String name;
   protected boolean success;
@@ -64,8 +66,17 @@ public class WebhookDeliveryLiteDto<T extends WebhookDeliveryLiteDto> {
     return ceTaskUuid;
   }
 
-  public T setCeTaskUuid(String s) {
+  public T setCeTaskUuid(@Nullable String s) {
     this.ceTaskUuid = s;
+    return (T)this;
+  }
+
+  public String getAnalysisUuid() {
+    return analysisUuid;
+  }
+
+  public T setAnalysisUuid(String s) {
+    this.analysisUuid = s;
     return (T)this;
   }
 

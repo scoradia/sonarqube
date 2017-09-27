@@ -30,6 +30,7 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.core.config.WebhookProperties;
 import org.sonar.core.util.stream.MoreCollectors;
+import org.sonar.db.DbClient;
 
 import static java.lang.String.format;
 import static org.sonar.core.config.WebhookProperties.MAX_WEBHOOKS_PER_TYPE;
@@ -41,10 +42,12 @@ public class WebHooksImpl implements WebHooks {
 
   private final WebhookCaller caller;
   private final WebhookDeliveryStorage deliveryStorage;
+  private final DbClient dbClient;
 
-  public WebHooksImpl(WebhookCaller caller, WebhookDeliveryStorage deliveryStorage) {
+  public WebHooksImpl(WebhookCaller caller, WebhookDeliveryStorage deliveryStorage, DbClient dbClient) {
     this.caller = caller;
     this.deliveryStorage = deliveryStorage;
+    this.dbClient = dbClient;
   }
 
   @Override
@@ -71,8 +74,9 @@ public class WebHooksImpl implements WebHooks {
         webHookProperty -> {
           String name = config.get(format(WEBHOOK_PROPERTY_FORMAT, webHookProperty, WebhookProperties.NAME_FIELD)).orElse(null);
           String url = config.get(format(WEBHOOK_PROPERTY_FORMAT, webHookProperty, WebhookProperties.URL_FIELD)).orElse(null);
+
           if (name != null && url != null) {
-            return new Webhook(analysis.getProjectUuid(), analysis.getCeTaskUuid(), name, url);
+            return new Webhook(analysis.getProjectUuid(), analysis.getCeTaskUuid(), analysis.getAnalysisUuid(), name, url);
           }
           return null;
         })
